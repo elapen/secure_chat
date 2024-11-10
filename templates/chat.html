@@ -1,0 +1,114 @@
+<!-- chat.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Secure Chat</title>
+    <!-- Include the correct version of Socket.IO client -->
+    <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+    <!-- Include BigInteger.js for big integer arithmetic -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/big-integer/1.6.52/BigInteger.min.js"></script>
+    <!-- Include CryptoJS for cryptographic functions -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+</head>
+
+<body>
+    <h2>Welcome, {{ username }}</h2>
+    <div>
+        <label for="recipient">Recipient:</label>
+        <input type="text" id="recipient">
+        <label for="message">Message:</label>
+        <input type="text" id="message">
+        <button onclick="sendMessage()">Send</button>
+    </div>
+    <div id="chat">
+        <!-- Chat messages will appear here -->
+    </div>
+    <script>
+        var socket = io();
+
+        // Retrieve variables from server
+        var username = "{{ username }}";
+        var privateKey = bigInt("{{ private_key }}");
+        var publicKey = bigInt("{{ public_key }}");
+        var p = bigInt("{{ p }}");
+        var g = bigInt("{{ g }}");
+
+        // Store public keys of other users
+        var publicKeys = {};
+
+        socket.on('connect', function() {
+            socket.emit('join');
+        });
+
+        socket.on('receive_message', function(data) {
+            var sender = data.sender;
+            var ciphertextHex = data.message;
+            var ivHex = data.iv;
+            var senderPublicKey = new bigInt(data.sender_public_key);
+
+            // Compute shared secret
+            var sharedSecret = senderPublicKey.modPow(privateKey, p);
+            // Derive AES key
+            var sharedSecretHex = sharedSecret.toString(16);
+            var aesKey = CryptoJS.SHA256(CryptoJS.enc.Hex.parse(sharedSecretHex));
+
+            // Convert ciphertext and IV from hex to WordArray
+            var ciphertext = CryptoJS.enc.Hex.parse(ciphertextHex);
+            var iv = CryptoJS.enc.Hex.parse(ivHex);
+
+            // Decrypt the message
+            var decrypted = CryptoJS.AES.decrypt(
+                { ciphertext: ciphertext },
+                aesKey,
+                { mode: CryptoJS.mode.CFB, padding: CryptoJS.pad.NoPadding, iv: iv }
+            );
+
+            var plaintext = decrypted.toString(CryptoJS.enc.Utf8);
+
+            // Display the plaintext message
+            var chat = document.getElementById('chat');
+            chat.innerHTML += '<p><strong>' + sender + ':</strong> ' + plaintext + '</p>';
+        });
+
+
+        function sendMessage() {
+            var recipient = document.getElementById('recipient').value;
+            var message = document.getElementById('message').value;
+
+            // Get recipient's public key from the server
+            socket.emit('get_public_key', {recipient: recipient}, function(response) {
+                if (response.success) {
+                    var recipientPublicKey = new bigInt(response.public_key);
+
+                    // Compute shared secret
+                    var sharedSecret = recipientPublicKey.modPow(privateKey, p);
+
+                    // Derive AES key
+                    var sharedSecretHex = sharedSecret.toString(16);
+                    var aesKey = CryptoJS.SHA256(CryptoJS.enc.Hex.parse(sharedSecretHex));
+
+                    // Encrypt the message
+                    var iv = CryptoJS.lib.WordArray.random(16);
+                    var encrypted = CryptoJS.AES.encrypt(message, aesKey, {
+                        mode: CryptoJS.mode.CFB,
+                        padding: CryptoJS.pad.NoPadding,
+                        iv: iv
+                    });
+
+                    // Send the encrypted message along with IV and public key
+                    socket.emit('send_message', {
+                        'recipient': recipient,
+                        'message': encrypted.ciphertext.toString(CryptoJS.enc.Hex),
+                        'iv': iv.toString(CryptoJS.enc.Hex),
+                        'sender_public_key': publicKey.toString()
+                    });
+                    document.getElementById('message').value = '';
+                } else {
+                    alert('Recipient not found');
+                }
+            });
+        }
+    </script>
+</body>
+
+</html>
