@@ -6,6 +6,7 @@
 <details>
 
 <summary>🇷🇺 Русский</summary>
+
 # 📧 Приложение для Безопасного Чата с Использованием Алгоритма Диффи-Хеллмана
 
 **Автор:** Бекзат Жаксыбаев  
@@ -143,6 +144,7 @@ secure_chat/
 
 <details>
 <summary>🇺🇸 English</summary>
+
 **Author:** Bekzat Zhaksybayev  
 **Course Work for:** First-year Master's Student
 
