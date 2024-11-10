@@ -2,15 +2,10 @@
 # 📧 Secure Chat Application using Diffie-Hellman Algorithm
 
 ## Language
-- [Русский](#русский)
-- [English](#english)
----
+
 <details>
 
 <summary>🇷🇺 Русский</summary>
-
-
-## Русский
 # 📧 Приложение для Безопасного Чата с Использованием Алгоритма Диффи-Хеллмана
 
 **Автор:** Бекзат Жаксыбаев  
@@ -148,11 +143,6 @@ secure_chat/
 
 <details>
 <summary>🇺🇸 English</summary>
-
-## English
-
-# 📧 Secure Chat Application using Diffie-Hellman Algorithm
-
 **Author:** Bekzat Zhaksybayev  
 **Course Work for:** First-year Master's Student
 
